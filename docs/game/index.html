@@ -1,37 +1,920 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chorark Game</title>
+    <title>🚀 Into the Chorark</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <style>
+        :root {
+            /* Color Constants */
+            --primary-green: #00ff00;
+            --secondary-cyan: #00ffff;
+            --warning-yellow: #ffff00;
+            --error-red: #ff0000;
+            --background-dark: #000011;
+            --background-gradient: linear-gradient(135deg, #000011 0%, #001122 50%, #000011 100%);
+            
+            /* Layout Constants */
+            --canvas-width: 1000px;
+            --canvas-height: 700px;
+            --splash-z-index: 1000;
+            --error-z-index: 2000;
+            
+            /* Typography Constants */
+            --font-primary: Arial, sans-serif;
+            --font-mono: 'Courier New', monospace;
+            --font-size-large: 2.5em;
+            --font-size-medium: 1.2em;
+            --font-size-small: 1.1em;
+            --font-size-error: 4em;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #000;
-            color: #fff;
             margin: 0;
             padding: 20px;
-            text-align: center;
+            background-color: #000;
+            color: #fff;
+            font-family: var(--font-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
+        
         h1 {
-            color: #ff0000;
+            color: var(--primary-green);
+            margin-bottom: 12px;
+        }
+        
+        #gameCanvas {
+            border: 2px solid var(--primary-green);
+            background-color: var(--background-dark);
+            width: var(--canvas-width);
+            height: var(--canvas-height);
+        }
+        
+        /* Splash Screen Styles */
+        #splashScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--background-gradient);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: var(--splash-z-index);
+            font-family: var(--font-mono);
+        }
+        
+        .splash-content {
+            text-align: center;
+            max-width: 600px;
+            padding: 20px;
+        }
+        
+        .splash-title {
+            font-size: var(--font-size-large);
+            color: var(--primary-green);
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--primary-green);
+            animation: pulse 2s ease-in-out infinite alternate;
+        }
+        
+        .splash-subtitle {
+            font-size: var(--font-size-medium);
+            color: var(--warning-yellow);
+            margin-bottom: 30px;
+        }
+        
+        .loading-container {
+            margin: 20px 0;
+        }
+        
+        .loading-text {
+            font-size: var(--font-size-small);
+            color: var(--secondary-cyan);
+            margin-bottom: 15px;
+            min-height: 1.5em;
+        }
+        
+        .loading-bar {
+            width: 300px;
+            height: 4px;
+            background-color: #333;
+            border: 1px solid #666;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-green), var(--secondary-cyan), var(--primary-green));
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: shimmer 1.5s ease-in-out infinite;
+        }
+        
+        .loading-steps {
+            margin-top: 20px;
+            text-align: left;
+            color: #888;
+        }
+        
+        .loading-step {
+            margin: 5px 0;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+        
+        .loading-step.active {
+            opacity: 1;
+            color: var(--primary-green);
+        }
+        
+        .loading-step.completed {
+            opacity: 0.8;
+            color: var(--secondary-cyan);
+        }
+        
+        @keyframes pulse {
+            from { text-shadow: 0 0 10px var(--primary-green); }
+            to { text-shadow: 0 0 20px var(--primary-green), 0 0 30px var(--primary-green); }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .instructions {
+            margin-top: 12px;
+            text-align: center;
+            max-width: 600px;
+        }
+        
+        .instructions h3 {
+            color: var(--warning-yellow);
+        }
+        
+        .instructions ul {
+            text-align: left;
+            display: inline-block;
+        }
+        
+        .instructions li {
+            margin: 5px 0;
+        }
+        
+        /* Error Screen Styles */
+        #errorScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--background-gradient);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: var(--error-z-index);
+            font-family: var(--font-mono);
+        }
+        
+        .error-content {
+            text-align: center;
+            max-width: 800px;
+            padding: 20px;
+        }
+        
+        .error-title {
+            font-size: var(--font-size-error);
+            color: var(--error-red);
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px var(--error-red);
+            animation: errorPulse 1.5s ease-in-out infinite alternate;
+        }
+        
+        .crash-title {
+            font-size: var(--font-size-error);
+            color: var(--error-red);
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px var(--error-red);
+            animation: errorPulse 1.5s ease-in-out infinite alternate;
+        }
+        
+        .error-message {
+            font-size: var(--font-size-small);
+            color: #ffffff;
+            margin-bottom: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid var(--error-red);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: var(--font-mono);
+            line-height: 1.4;
+            text-align: left;
+        }
+        
+        .error-instructions {
+            font-size: var(--font-size-small);
+            color: var(--warning-yellow);
             margin-bottom: 20px;
         }
-        p {
+        
+        .error-refresh-btn {
+            background: linear-gradient(45deg, var(--error-red), #cc0000);
+            color: white;
+            border: 2px solid var(--error-red);
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .error-refresh-btn:hover {
+            background: linear-gradient(45deg, #cc0000, #990000);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        @keyframes errorPulse {
+            from { 
+                text-shadow: 0 0 20px var(--error-red);
+                transform: scale(1);
+            }
+            to { 
+                text-shadow: 0 0 30px var(--error-red), 0 0 40px var(--error-red);
+                transform: scale(1.02);
+            }
+        }
+        
+        /* NoScript Overlay Styles */
+        .noscript-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .noscript-content {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff4444;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(255, 68, 68, 0.3);
+        }
+        
+        .noscript-title {
+            font-size: 2.5em;
+            color: #ff4444;
             margin-bottom: 10px;
+            text-shadow: 0 0 20px #ff4444;
+            font-weight: bold;
+            letter-spacing: 2px;
+            animation: noscriptPulse 2s ease-in-out infinite;
         }
-        a {
-            color: #00d4ff;
-            text-decoration: none;
+        
+        .noscript-subtitle {
+            font-size: 1.2em;
+            color: #ffaa44;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px #ffaa44;
+            font-weight: bold;
         }
-        a:hover {
-            text-decoration: underline;
+        
+        .noscript-message {
+            font-size: 1.1em;
+            color: #ffffff;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            text-shadow: 0 0 5px #ffffff;
+        }
+        
+        .noscript-instructions {
+            text-align: left;
+            margin-bottom: 30px;
+            background: rgba(255, 68, 68, 0.1);
+            padding: 20px;
+            border-radius: 5px;
+            border-left: 4px solid #ff4444;
+        }
+        
+        .noscript-step {
+            color: #cccccc;
+            margin-bottom: 8px;
+            font-size: 1em;
+            text-shadow: 0 0 3px #cccccc;
+        }
+        
+        .noscript-footer {
+            font-size: 0.9em;
+            color: #888888;
+            font-style: italic;
+            text-shadow: 0 0 3px #888888;
+        }
+        
+        @keyframes noscriptPulse {
+            0%, 100% { 
+                text-shadow: 0 0 20px #ff4444, 0 0 30px #ff4444;
+                transform: scale(1);
+            }
+            50% { 
+                text-shadow: 0 0 30px #ff4444, 0 0 40px #ff4444;
+                transform: scale(1.02);
+            }
         }
     </style>
-</head>
-<body>
-    <h1>Chorark</h1>
-    <p>Game coming soon...</p>
-    <p><a href="../index.html">← Back to Home</a></p>
+  </head>
+  <body>
+      <noscript>
+          <div class="noscript-overlay">
+              <div class="noscript-content">
+                  <div class="noscript-title">SYSTEM FAILURE</div>
+                  <div class="noscript-subtitle">JavaScript Core Offline</div>
+                  <div class="noscript-message">
+                      <strong>Into the Chorark</strong> - Are you ready for some adventure?<br>
+                      Please enable JavaScript in your browser and restart to play.
+                  </div>
+                  <div class="noscript-instructions">
+                      <div class="noscript-step">• Check browser security settings</div>
+                      <div class="noscript-step">• Disable JavaScript blockers</div>
+                      <div class="noscript-step">• Try an alternative browser</div>
+                      <div class="noscript-step">• Refresh the page after enabling</div>
+                  </div>
+                  <div class="noscript-footer">Mission Control - System Status: OFFLINE</div>
+              </div>
+          </div>
+      </noscript>
+
+      <div id="splashScreen" role="dialog" aria-label="Game Loading Screen">
+        <div class="splash-content">
+            <div class="splash-title">🚀 INTO THE CHORARK</div>
+            <div class="splash-subtitle">Initializing core systems. Standby...</div>
+            
+            <div class="loading-container">
+                <div class="loading-text" id="loadingText" aria-live="polite">Loading game assets...</div>
+                <div class="loading-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="loading-progress" id="loadingProgress"></div>
+                </div>
+            </div>
+            
+            <div class="loading-steps" aria-label="Loading progress steps" id="loadingStepsContainer"></div>
+        </div>
+    </div>
+
+    <div id="errorScreen" role="dialog" aria-label="Game Error Screen" aria-modal="true">
+        <div class="error-content">
+            <div class="error-title">CRASH</div>
+            <div class="error-message" id="errorMessage" aria-live="assertive">Game initialization failed. Please refresh the page to restart.</div>
+            <div class="error-instructions">
+                Critical system failure detected. All subsystems offline.<br>
+                Please refresh the page to attempt recovery.
+            </div>
+            <button class="error-refresh-btn" onclick="location.reload()" aria-label="Refresh page to restart game">REFRESH PAGE</button>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas" width="1000" height="700" aria-label="Game Canvas"></canvas>
+    
+
+    <script type="module">
+        import init, { Game } from './pkg/game.js';
+        
+        const LOADING_DELAYS = {
+            WASM_DOWNLOAD: 25,
+            TERRAFORMING: 50,
+            SUBSYSTEMS: 50,
+            COMPLETION: 150
+        };
+        
+        const LOADING_STEPS = [
+            'Downloading WASM module...',
+            'Compiling simulation engine...',
+            'Decoding mission parameters...',
+            'Cross-checking launch protocols...',
+            'Terraforming planetary surface...',
+            'Initializing ship subsystems...',
+            'All systems online. Ready for launch!'
+        ];
+        
+        const TOTAL_LOADING_STEPS = LOADING_STEPS.length;
+        
+        function generateLoadingSteps() {
+            const container = document.getElementById('loadingStepsContainer');
+            LOADING_STEPS.forEach((stepText, index) => {
+                const stepElement = document.createElement('div');
+                stepElement.className = 'loading-step';
+                stepElement.id = `step${index + 1}`;
+                stepElement.textContent = `• ${stepText}`;
+                container.appendChild(stepElement);
+            });
+        }
+        
+        let isCrashed = false;
+        
+        function extractErrorDetails(error) {
+            try {
+                if (error instanceof Error) {
+                    const name = error.name || 'UnknownError';
+                    const message = error.message || 'No message available';
+                    const stack = error.stack || 'No stack trace available';
+                    return `Error: ${name}\nMessage: ${message}\nStack: ${stack}`;
+                }
+                return `Error: ${String(error)}`;
+            } catch (e) {
+                return `Error: Failed to extract details (${String(e)})`;
+            }
+        }
+        
+        function detectNetworkError(error) {
+            if (!error) return null;
+            
+            const errorMessage = error.message || error.toString() || '';
+            const errorName = error.name || '';
+            
+            // Check for specific network error patterns
+            if (errorName === 'TypeError' && errorMessage.includes('NetworkError when attempting to fetch resource')) {
+                return {
+                    type: 'network_fetch',
+                    title: 'NETWORK CONNECTION FAILED',
+                    message: 'Unable to download game files. Please check your internet connection and try again.',
+                    instructions: 'This usually means:\n• Your internet connection is unstable\n• The game server is temporarily unavailable\n• Your browser is blocking the download\n\nTry refreshing the page or check your network settings.'
+                };
+            }
+            
+            if (errorName === 'TypeError' && errorMessage.includes('Failed to fetch')) {
+                return {
+                    type: 'network_failed_fetch',
+                    title: 'DOWNLOAD FAILED',
+                    message: 'Failed to download required game files.',
+                    instructions: 'This could be due to:\n• Network connectivity issues\n• Server maintenance\n• Browser security restrictions\n\nPlease refresh the page to retry the download.'
+                };
+            }
+            
+            if (errorName === 'TypeError' && errorMessage.includes('Load failed')) {
+                return {
+                    type: 'network_load_failed',
+                    title: 'ASSET LOADING FAILED',
+                    message: 'Game assets could not be loaded from the server.',
+                    instructions: 'Possible causes:\n• Slow or unstable internet connection\n• Server temporarily unavailable\n• Browser cache issues\n\nTry refreshing the page or clearing your browser cache.'
+                };
+            }
+            
+            if (errorMessage.includes('CORS') || errorMessage.includes('Cross-Origin')) {
+                return {
+                    type: 'cors_error',
+                    title: 'SECURITY RESTRICTION',
+                    message: 'Browser security settings are preventing the game from loading.',
+                    instructions: 'This is likely a CORS (Cross-Origin Resource Sharing) issue:\n• Try accessing the game from the same domain it\'s hosted on\n• Check if you\'re using HTTPS vs HTTP\n'
+                };
+            }
+            
+            return null;
+        }
+        
+        function logErrorReport(title, errorDetails, additionalInfo = {}) {
+            try {
+                console.error(`=== ${title} ===`);
+                console.error('Error Details:', errorDetails);
+                if (additionalInfo && typeof additionalInfo === 'object' && Object.keys(additionalInfo).length > 0) {
+                    console.error('Additional Info:', additionalInfo);
+                }
+                console.error(`=== END ${title} ===`);
+            } catch (e) {
+                console.error('Failed to log error report:', e);
+                console.error('Original error:', errorDetails);
+            }
+        }
+        
+        class LoadingManager {
+            constructor() {
+                this.currentStep = 0;
+                this.totalSteps = TOTAL_LOADING_STEPS;
+                this.progressBar = document.getElementById('loadingProgress');
+                this.loadingText = document.getElementById('loadingText');
+                this.steps = LOADING_STEPS.map((_, index) => `step${index + 1}`);
+            }
+            
+            updateProgress(step, text) {
+                this.currentStep = step;
+                const progress = (step / this.totalSteps) * 100;
+                this.progressBar.style.width = `${progress}%`;
+                this.progressBar.setAttribute('aria-valuenow', progress);
+                
+                const displayText = text !== undefined ? text : LOADING_STEPS[step - 1];
+                this.loadingText.textContent = displayText;
+                
+                this.steps.forEach((stepId, index) => {
+                    const stepElement = document.getElementById(stepId);
+                    if (index < step) {
+                        stepElement.classList.add('completed');
+                        stepElement.classList.remove('active');
+                    } else if (index === step) {
+                        stepElement.classList.add('active');
+                        stepElement.classList.remove('completed');
+                    } else {
+                        stepElement.classList.remove('active', 'completed');
+                    }
+                });
+            }
+            
+            hide() {
+                const splashScreen = document.getElementById('splashScreen');
+                splashScreen.style.opacity = '0';
+                splashScreen.style.transition = 'opacity 0.5s ease-out';
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                    splashScreen.style.visibility = 'hidden';
+                    splashScreen.style.zIndex = '-1';
+                }, 500);
+            }
+        }
+        
+        function showCrashScreen(customMessage = null, isCrashData = true, networkError = null) {
+            isCrashed = true;
+            
+            const splashScreen = document.getElementById('splashScreen');
+            splashScreen.style.display = 'none';
+            
+            const gameCanvas = document.getElementById('gameCanvas');
+            gameCanvas.style.display = 'none';
+            
+            const errorScreen = document.getElementById('errorScreen');
+            const errorTitleElement = errorScreen.querySelector('.error-title');
+            const errorMessageElement = document.getElementById('errorMessage');
+            const errorInstructionsElement = errorScreen.querySelector('.error-instructions');
+            
+            if (networkError) {
+                errorTitleElement.textContent = networkError.title;
+                errorTitleElement.className = 'error-title';
+                errorMessageElement.textContent = networkError.message;
+                errorInstructionsElement.textContent = networkError.instructions;
+            } else {
+                errorTitleElement.textContent = 'CRASH';
+                errorTitleElement.className = isCrashData ? 'crash-title' : 'error-title';
+                
+                if (customMessage) {
+                    errorMessageElement.textContent = customMessage;
+                } else {
+                    errorMessageElement.textContent = 'An error occurred. Please refresh the page to restart.';
+                }
+                errorInstructionsElement.textContent = 'Critical system failure detected. All subsystems offline.\nPlease refresh the page to attempt recovery.';
+            }
+            
+            errorScreen.style.display = 'flex';
+        }
+        
+        class AudioManager {
+            constructor(game) {
+                this.game = game;
+                this.initialized = false;
+            }
+            
+            async initialize() {
+                if (this.initialized) return;
+                
+                try {
+                    this.game.initialize_audio();
+                    this.game.resume_audio();
+                    this.initialized = true;
+                } catch (e) {
+                    console.log('Audio initialization deferred:', e);
+                }
+            }
+        }
+        
+        function getEventCoordinates(event, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            let x, y;
+            
+            if (event.touches && event.touches.length > 0) {
+                x = event.touches[0].clientX - rect.left;
+                y = event.touches[0].clientY - rect.top;
+            } else {
+                x = event.clientX - rect.left;
+                y = event.clientY - rect.top;
+            }
+            
+            return { x, y };
+        }
+        
+        function setupKeyboardControls(game, audioManager) {
+            const handleKeyDown = (event) => {
+                if (isCrashed) return;
+                
+                audioManager.initialize();
+                
+                const state = game.get_state();
+                if (state === 'Menu' && (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)) {
+                    return;
+                }
+                event.preventDefault();
+                game.key_down(event.code);
+            };
+            
+            const handleKeyUp = (event) => {
+                if (isCrashed) return;
+                
+                const state = game.get_state();
+                if (state === 'Menu' && (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)) {
+                    return;
+                }
+                event.preventDefault();
+                game.key_up(event.code);
+            };
+            
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
+            
+            return () => {
+                document.removeEventListener('keydown', handleKeyDown);
+                document.removeEventListener('keyup', handleKeyUp);
+            };
+        }
+        
+        function setupMouseControls(game, audioManager) {
+            const canvas = document.getElementById('gameCanvas');
+            
+            const handleMouseMove = (event) => {
+                if (isCrashed) return;
+                const { x, y } = getEventCoordinates(event, canvas);
+                game.mouse_move(x, y);
+            };
+            
+            const handleMouseDown = (event) => {
+                if (isCrashed) return;
+                const { x, y } = getEventCoordinates(event, canvas);
+                game.mouse_down(x, y);
+            };
+            
+            const handleMouseUp = (event) => {
+                if (isCrashed) return;
+                const { x, y } = getEventCoordinates(event, canvas);
+                game.mouse_up(x, y);
+            };
+            
+            const handleClick = () => {
+                if (isCrashed) return;
+                audioManager.initialize();
+            };
+            
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            document.addEventListener('click', handleClick);
+            
+            return () => {
+                canvas.removeEventListener('mousemove', handleMouseMove);
+                canvas.removeEventListener('mousedown', handleMouseDown);
+                canvas.removeEventListener('mouseup', handleMouseUp);
+                document.removeEventListener('click', handleClick);
+            };
+        }
+        
+        function setupTouchControls(game) {
+            const canvas = document.getElementById('gameCanvas');
+            const touchOptions = { passive: false };
+            
+            const handleTouchStart = (event) => {
+                if (isCrashed) return;
+                event.preventDefault();
+                const { x, y } = getEventCoordinates(event, canvas);
+                game.mouse_down(x, y);
+            };
+            
+            const handleTouchMove = (event) => {
+                if (isCrashed) return;
+                event.preventDefault();
+                const { x, y } = getEventCoordinates(event, canvas);
+                game.mouse_move(x, y);
+            };
+            
+            const handleTouchEnd = (event) => {
+                if (isCrashed) return;
+                event.preventDefault();
+                const { x, y } = getEventCoordinates(event, canvas);
+                game.mouse_up(x, y);
+            };
+            
+            const handleTouchCancel = (event) => {
+                if (isCrashed) return;
+                event.preventDefault();
+                game.mouse_up(-1, -1);
+            };
+            
+            canvas.addEventListener('touchstart', handleTouchStart, touchOptions);
+            canvas.addEventListener('touchmove', handleTouchMove, touchOptions);
+            canvas.addEventListener('touchend', handleTouchEnd, touchOptions);
+            canvas.addEventListener('touchcancel', handleTouchCancel, touchOptions);
+            
+            return () => {
+                canvas.removeEventListener('touchstart', handleTouchStart, touchOptions);
+                canvas.removeEventListener('touchmove', handleTouchMove, touchOptions);
+                canvas.removeEventListener('touchend', handleTouchEnd, touchOptions);
+                canvas.removeEventListener('touchcancel', handleTouchCancel, touchOptions);
+            };
+        }
+        
+        // Game controls setup
+        function setupGameControls(game) {
+            const audioManager = new AudioManager(game);
+            
+            const cleanupKeyboard = setupKeyboardControls(game, audioManager);
+            const cleanupMouse = setupMouseControls(game, audioManager);
+            const cleanupTouch = setupTouchControls(game);
+            
+            return () => {
+                cleanupKeyboard();
+                cleanupMouse();
+                cleanupTouch();
+            };
+        }
+        
+        // Game loop management
+        class GameLoopManager {
+            constructor(game) {
+                this.game = game;
+                this.lastTime = performance.now();
+                this.isRunning = true;
+                this.splashScreen = document.getElementById('splashScreen');
+            }
+            
+            start() {
+                if (this.isRunning) {
+                    requestAnimationFrame((currentTime) => this.gameLoop(currentTime));
+                }
+            }
+            
+            stop() {
+                this.isRunning = false;
+            }
+            
+            gameLoop(currentTime) {
+                if (!this.isRunning || isCrashed) return; // Don't run if in crash state
+                
+                try {
+                    this.ensureSplashScreenHidden();
+                    
+                    const deltaTime = currentTime - this.lastTime;
+                    this.lastTime = currentTime;
+                    const deltaTimeSeconds = deltaTime / 1000.0;
+                    
+                    if (this.isValidDeltaTime(deltaTimeSeconds)) {
+                        this.game.update(deltaTimeSeconds);
+                    }
+                    this.game.render();
+                    
+                    if (this.isRunning && !isCrashed) {
+                        requestAnimationFrame((currentTime) => this.gameLoop(currentTime));
+                    }
+                } catch (error) {
+                    this.stop();
+                    this.handleGameLoopError(error, currentTime);
+                }
+            }
+            
+            ensureSplashScreenHidden() {
+                if (this.splashScreen && this.splashScreen.style.display !== 'none') {
+                    this.splashScreen.style.display = 'none';
+                    this.splashScreen.style.visibility = 'hidden';
+                    this.splashScreen.style.zIndex = '-1';
+                }
+            }
+            
+            isValidDeltaTime(deltaTime) {
+                return !isNaN(deltaTime) && isFinite(deltaTime) && deltaTime >= 0;
+            }
+            
+            handleGameLoopError(error, currentTime) {
+                this.stop();
+                
+                const crashData = window.gameErrorData;
+                if (crashData) {
+                    try {
+                        const parsed = JSON.parse(crashData);
+                        if (parsed && parsed.context && parsed.message) {
+                            let crashMessage = `${parsed.message}\n\n${parsed.context}\n\n${parsed.version}`;
+                            showCrashScreen(crashMessage, true);
+                            delete window.gameErrorData;
+                            return;
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse window.gameErrorData:', e);
+                    }
+                } else {
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    showCrashScreen(`GAME CRASH DETECTED\n\n${errorMessage}\n\nPlease refresh the page to restart`, false);
+                }
+            }
+        }
+        
+        async function run() {
+            // Generate loading steps from shared data
+            generateLoadingSteps();
+            
+            const loadingManager = new LoadingManager();
+            loadingManager.updateProgress(0, 'Starting initialization...');
+            
+            try {
+                loadingManager.updateProgress(1);
+                await new Promise(resolve => setTimeout(resolve, LOADING_DELAYS.WASM_DOWNLOAD));
+                
+                loadingManager.updateProgress(2);
+                await init();
+                
+                loadingManager.updateProgress(3);
+                const game = new Game();
+
+                loadingManager.updateProgress(4);
+                game.validate_configurations();
+
+                loadingManager.updateProgress(5);
+                await new Promise(resolve => setTimeout(resolve, LOADING_DELAYS.TERRAFORMING));
+
+                loadingManager.updateProgress(6);
+                await new Promise(resolve => setTimeout(resolve, LOADING_DELAYS.SUBSYSTEMS));
+
+                loadingManager.updateProgress(7);
+                await new Promise(resolve => setTimeout(resolve, LOADING_DELAYS.COMPLETION));
+                
+                loadingManager.hide();
+                
+                setupGameControls(game);
+                const gameLoop = new GameLoopManager(game);
+                gameLoop.start();
+                
+            } catch (error) {
+                console.error('Failed to initialize game:', error);
+                
+                // Check for structured error data from WASM crash
+                const crashData = window.gameErrorData;
+                if (crashData) {
+                    try {
+                        const parsed = JSON.parse(crashData);
+                        if (parsed && parsed.context && parsed.message) {
+                            let crashMessage = `${parsed.message}\n\n${parsed.context}\n\n${parsed.version}`;
+                            showCrashScreen(crashMessage, true);
+                            delete window.gameErrorData;
+                            return;
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse window.gameErrorData:', e);
+                    }
+                }
+                
+                const errorDetails = extractErrorDetails(error);
+                
+                // Check if this is a network error and show appropriate message
+                const networkError = detectNetworkError(error);
+                if (networkError) {
+                    showCrashScreen(null, false, networkError);
+                    logErrorReport('NETWORK ERROR DETECTED', errorDetails, {
+                        networkErrorType: networkError.type,
+                        userAgent: navigator.userAgent,
+                        platform: navigator.platform,
+                        language: navigator.language,
+                        cookieEnabled: navigator.cookieEnabled,
+                        onLine: navigator.onLine,
+                        connectionType: navigator.connection ? navigator.connection.effectiveType : 'unknown'
+                    });
+                } else {
+                    showCrashScreen(`Failed to initialize game: ${errorDetails}`, false);
+                    logErrorReport('GAME INITIALIZATION FAILED', errorDetails, {
+                        userAgent: navigator.userAgent,
+                        platform: navigator.platform,
+                        language: navigator.language,
+                        cookieEnabled: navigator.cookieEnabled,
+                        onLine: navigator.onLine
+                    });
+                }
+                return;
+            }
+        }
+        
+        run();
+    </script>
 </body>
 </html>
